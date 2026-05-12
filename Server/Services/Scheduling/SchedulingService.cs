@@ -28,7 +28,7 @@ namespace Service.Scheduling
             // טעינת נתונים
             var students = await _context.Students.AsNoTracking().Where(s => s.SchoolId == schoolId).ToListAsync();
             var parents = await _context.Parents.AsNoTracking().Where(p => p.SchoolId == schoolId).ToListAsync();
-            var parentConstraints = await _context.ParentAvailability.AsNoTracking().Where(pa => pa.SchoolId == schoolId).ToListAsync();
+            var parentConstraints = await _context.ParentAvailability.AsNoTracking().Where(pa => pa.SchoolId == schoolId && pa.MeetingDate.Date == school.MeetingDate.Date).ToListAsync();
             var teachers = await _context.Teachers.AsNoTracking().Where(t => t.SchoolId == schoolId).ToListAsync();
 
             // מילונים לשליפה מהירה

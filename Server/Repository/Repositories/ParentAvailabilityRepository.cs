@@ -45,6 +45,12 @@ namespace Repository.Repositories
         {
             return await ctx.ParentAvailability.FindAsync(id);
         }
+        public async Task<List<ParentAvailability>> GetBySchoolId(int schoolId)
+        {
+            return await ctx.ParentAvailability
+                .Where(x => x.SchoolId == schoolId) // וודא שזה שם השדה אצלך
+                .ToListAsync();
+        }
 
         public async Task<ParentAvailability> UpdateItem(int id, ParentAvailability item)
         {
