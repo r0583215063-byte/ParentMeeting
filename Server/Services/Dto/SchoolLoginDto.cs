@@ -7,13 +7,12 @@ namespace Service.Dto
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "שם בית הספר הוא שדה חובה")]
+        [Required]
         [StringLength(50, MinimumLength = 2)]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "סיסמה היא שדה חובה")]
-        [RegularExpression(@"^(?=.*[0-9])(?=.*[a-zA-Z]).{6,20}$",
-         ErrorMessage = "הסיסמה חייבת להכיל אותיות ומספרים ובאורך 6-20 תווים")]
+        [Required]
+        [RegularExpression(@"^.{6,20}$")]
         public string Password { get; set; } = string.Empty;
 
         public string? Token { get; set; }
