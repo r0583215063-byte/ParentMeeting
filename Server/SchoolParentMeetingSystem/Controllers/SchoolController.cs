@@ -233,7 +233,6 @@ namespace SchoolParentMeetingSystem.Controllers
                 return BadRequest("עדכון ההגדרות נכשל.");
             }
         }
-
         [Authorize(Roles = "Admin,School")]
         [HttpGet("status")]
         public async Task<IActionResult> GetStatus()
@@ -241,10 +240,26 @@ namespace SchoolParentMeetingSystem.Controllers
             try
             {
                 int schoolId = CurrentSchoolId;
-                var schools = await _service.GetBySchoolId(schoolId);
-                if (schools == null || schools.Count == 0) return NotFound();
 
-                return Ok(schools[0]);
+                // בדיקה שבית הספר קיים
+                var schools = await _service.GetBySchoolId(schoolId);
+                if (schools == null || schools.Count == 0) return NotFound("בית הספר לא נמצא.");
+
+                // ביצוע היקש (Cast) לשירות בית הספר כדי לגשת למתודת הסטטוס החדשה
+                if (_service is SchoolService schoolService)
+                {
+                    // שליפת נתוני אמת מהדאטה-בייס (תלמידים ושיבוצים)
+                    var statusInfo = await schoolService.GetSchoolStatusAsync(schoolId);
+
+                    // החזרה בפורמט camelCase המדויק שהריאקט דורש בשביל ה-State
+                    return Ok(new
+                    {
+                        studentCount = statusInfo.StudentCount,
+                        isScheduleGenerated = statusInfo.IsScheduleGenerated
+                    });
+                }
+
+                return BadRequest("שירות עדכון סטטוס בית הספר אינו זמין.");
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -252,8 +267,8 @@ namespace SchoolParentMeetingSystem.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "שגיאה בשליפת סטטוס בית ספר");
-                return BadRequest("שגיאה בקבלת הנתונים.");
+                _logger.LogError(ex, "שגיאה בשליפת סטטוס בית ספר עבור מזהה {SchoolId}", CurrentSchoolId);
+                return BadRequest("שגיאה בקבלת הנתונים מהשרת.");
             }
         }
     }
