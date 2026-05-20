@@ -4,6 +4,7 @@ using Repository.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,11 @@ namespace Repository.Repositories
         public ParentRepository(IContext context)
         {
             ctx = context;
+        }
+
+        public async Task<List<Parent>> GetAsync(Expression<Func<Parent, bool>> predicate)
+        {
+            return await ctx.Parents.Where(predicate).ToListAsync();
         }
 
         public async Task<Parent> AddItem(Parent item)
@@ -32,7 +38,6 @@ namespace Repository.Repositories
                 return;
 
             ctx.Parents.Remove(parent);
-
             await ctx.Save();
         }
 
@@ -46,7 +51,6 @@ namespace Repository.Repositories
             return await ctx.Parents.FindAsync(id);
         }
 
-
         public async Task<Parent> UpdateItem(int id, Parent item)
         {
             var existingParent = await ctx.Parents.FindAsync(id);
@@ -59,9 +63,7 @@ namespace Repository.Repositories
             existingParent.ParentEmail = item.ParentEmail;
 
             await ctx.Save();
-
             return existingParent;
         }
     }
 }
-

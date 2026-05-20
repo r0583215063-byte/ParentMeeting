@@ -4,6 +4,7 @@ namespace Service.Dto
 {
     public class ParentMeetingDto
     {
+        public int Id { get; set; }
         [Required]
         public int StudentId { get; set; }
         public string StudentName { get; set; } 

@@ -4,7 +4,7 @@ using Repository.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Repository.Repositories
@@ -16,6 +16,11 @@ namespace Repository.Repositories
         public ParentAvailabilityRepository(IContext context)
         {
             ctx = context;
+        }
+
+        public async Task<List<ParentAvailability>> GetAsync(Expression<Func<ParentAvailability, bool>> predicate)
+        {
+            return await ctx.ParentAvailability.Where(predicate).ToListAsync();
         }
 
         public async Task<ParentAvailability> AddItem(ParentAvailability item)
@@ -32,7 +37,6 @@ namespace Repository.Repositories
                 return;
 
             ctx.ParentAvailability.Remove(parentAvailability);
-
             await ctx.Save();
         }
 
@@ -44,12 +48,6 @@ namespace Repository.Repositories
         public async Task<ParentAvailability> GetById(int id)
         {
             return await ctx.ParentAvailability.FindAsync(id);
-        }
-        public async Task<List<ParentAvailability>> GetBySchoolId(int schoolId)
-        {
-            return await ctx.ParentAvailability
-                .Where(x => x.SchoolId == schoolId) 
-                .ToListAsync();
         }
 
         public async Task<ParentAvailability> UpdateItem(int id, ParentAvailability item)

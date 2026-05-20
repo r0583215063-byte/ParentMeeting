@@ -3,6 +3,9 @@ using Repository.Entities;
 using Repository.Interfaces;
 using Service.Dto;
 using Service.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Service.Services
 {
@@ -17,12 +20,23 @@ namespace Service.Services
             this.mapper = map;
         }
 
+        public async Task SetupMeeting(int schoolId, MeetingSetupDto model)
+        {
+            var school = await repository.GetById(schoolId);
+            if (school == null)
+                throw new KeyNotFoundException("בית הספר לא נמצא.");
+
+            school.MeetingDate = model.Date;
+            school.MeetingStartTime = model.StartTime;
+            school.MeetingEndTime = model.EndTime;
+            school.SlotDurationMinutes = model.Duration;
+
+            await repository.UpdateItem(schoolId, school);
+        }
+
         public async Task<List<SchoolDto>> GetBySchoolId(int schoolId)
         {
-            var schools = (await repository.GetAll())
-                .Where(s => s.Id == schoolId)
-                .ToList();
-
+            var schools = await repository.GetAsync(s => s.Id == schoolId);
             return mapper.Map<List<SchoolDto>>(schools);
         }
 

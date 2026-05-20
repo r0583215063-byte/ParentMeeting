@@ -4,6 +4,7 @@ using Repository.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,16 @@ namespace Repository.Repositories
         public ParentMeetingRepository(IContext context)
         {
             ctx = context;
+        }
+
+        public async Task<List<ParentMeeting>> GetAsync(Expression<Func<ParentMeeting, bool>> predicate)
+        {
+            return await ctx.ParentMeetings
+                .Include(m => m.Student)
+                .Include(m => m.Parent)
+                .Include(m => m.Teacher)
+                .Where(predicate)
+                .ToListAsync();
         }
 
         public async Task<ParentMeeting> AddItem(ParentMeeting item)
@@ -32,10 +43,8 @@ namespace Repository.Repositories
                 return;
 
             ctx.ParentMeetings.Remove(parentMeeting);
-
             await ctx.Save();
         }
-
 
         public async Task<List<ParentMeeting>> GetAll()
         {
@@ -68,7 +77,6 @@ namespace Repository.Repositories
             existingMeeting.IsPast = item.IsPast;
 
             await ctx.Save();
-
             return existingMeeting;
         }
     }

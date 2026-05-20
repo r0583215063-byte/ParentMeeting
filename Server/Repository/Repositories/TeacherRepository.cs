@@ -4,6 +4,7 @@ using Repository.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,6 +19,11 @@ namespace Repository.Repositories
             ctx = context;
         }
 
+        public async Task<List<Teacher>> GetAsync(Expression<Func<Teacher, bool>> predicate)
+        {
+            return await ctx.Teachers.Where(predicate).ToListAsync();
+        }
+
         public async Task<Teacher> AddItem(Teacher item)
         {
             ctx.Teachers.Add(item);
@@ -28,14 +34,11 @@ namespace Repository.Repositories
         public async Task DeleteItem(int id)
         {
             var teacher = await ctx.Teachers.FindAsync(id);
-
-            if(teacher == null)
+            if (teacher == null)
                 return;
 
             ctx.Teachers.Remove(teacher);
-
             await ctx.Save();
-
         }
 
         public async Task<List<Teacher>> GetAll()
@@ -60,7 +63,6 @@ namespace Repository.Repositories
             existingTeacher.SchoolId = item.SchoolId;
 
             await ctx.Save();
-
             return existingTeacher;
         }
     }

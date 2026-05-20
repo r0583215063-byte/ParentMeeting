@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Service.Dto;
 using Service.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace SchoolParentMeetingSystem.Controllers
 {
@@ -12,21 +17,31 @@ namespace SchoolParentMeetingSystem.Controllers
     public class ParentAvailabilityController : ControllerBase
     {
         private readonly IService<ParentAvailabilityDto> _service;
-        private readonly IService<ParentDto> _parentService; // שימוש בממשק הגנרי שלך
+        private readonly IService<ParentDto> _parentService;
+        private readonly ILogger<ParentAvailabilityController> _logger; 
 
-        // Constructor שמרכז את ההזרקות
         public ParentAvailabilityController(
             IService<ParentAvailabilityDto> service,
-            IService<ParentDto> parentService)
+            IService<ParentDto> parentService,
+            ILogger<ParentAvailabilityController> logger)
         {
             _service = service;
             _parentService = parentService;
+            _logger = logger;
         }
 
-        private int GetCurrentSchoolId()
+        // שימוש בפרופרטי פנימי נקי במקום מתודה שמחזירה 0
+        private int CurrentSchoolId
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
-            return claim != null ? int.Parse(claim.Value) : 0;
+            get
+            {
+                var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (claim == null || !int.TryParse(claim.Value, out int schoolId))
+                {
+                    throw new UnauthorizedAccessException("מזהה בית ספר אינו תקין או חסר בטוקן.");
+                }
+                return schoolId;
+            }
         }
 
         [Authorize(Roles = "Admin,School")]
@@ -35,26 +50,29 @@ namespace SchoolParentMeetingSystem.Controllers
         {
             try
             {
-                int currentSchoolId = GetCurrentSchoolId();
-                dto.SchoolId = currentSchoolId;
+                if (dto == null) return BadRequest("נתוני הבקשה ריקים.");
 
-                // חיפוש זריז: אם ההורה קיים, נשמור את ה-ID שלו ליתר ביטחון
-                var allParents = await _parentService.GetBySchoolId(currentSchoolId);
+                int schoolId = CurrentSchoolId;
+                dto.SchoolId = schoolId;
+
+                // אופטימיזציה: שליפת ההורים של בית הספר הספציפי בלבד (כבר תיקנו את זה ב-Service)
+                var allParents = await _parentService.GetBySchoolId(schoolId);
                 var parent = allParents.FirstOrDefault(p => p.ParentIdentity == dto.ParentIdentity);
 
-                if (parent != null)
-                {
-                    dto.ParentId = parent.Id;
-                }
-                else
-                {
-                    dto.ParentId = null; // אין הורה? לא נורא, יש לנו את ה-ParentIdentity
-                }
+                dto.ParentId = parent?.Id; // שימוש ב-Null-conditional operator מקצר ונקי
 
                 var result = await _service.AddItem(dto);
-                return Ok(result);
+                return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result); // החזרה תקנית של אובייקט שנוצר
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "שגיאה ביצירת זמינות הורה");
+                return BadRequest("נכשל בביצוע הפעולה. נא לנסות שנית מאוחר יותר.");
+            }
         }
 
         [Authorize(Roles = "Admin,School")]
@@ -63,18 +81,18 @@ namespace SchoolParentMeetingSystem.Controllers
         {
             try
             {
-                var schoolId = GetCurrentSchoolId(); 
-                if (schoolId <= 0)
-                {
-                    return Unauthorized("מזהה בית ספר לא נמצא");
-                }
-
+                int schoolId = CurrentSchoolId;
                 var list = await _service.GetBySchoolId(schoolId);
                 return Ok(list);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogError(ex, "שגיאה בשליפת רשימת זמינויות");
+                return BadRequest("שגיאה בקבלת הנתונים.");
             }
         }
 
@@ -85,15 +103,26 @@ namespace SchoolParentMeetingSystem.Controllers
             try
             {
                 var item = await _service.GetById(id);
-                if (item == null) return NotFound();
-                if (item.SchoolId != GetCurrentSchoolId() && !User.IsInRole("Admin")) return Forbid();
+                if (item == null) return NotFound("הרשומה לא נמצאה.");
+
+                // בדיקת הרשאה קשיחה: וודא שבית הספר הנוכחי רשאי למחוק את הישות הזו
+                if (item.SchoolId != CurrentSchoolId && !User.IsInRole("Admin"))
+                {
+                    return Forbid();
+                }
 
                 await _service.DeleteItem(id);
                 return NoContent();
             }
-            catch (Exception ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "שגיאה במחיקת רשומה {Id}", id);
+                return BadRequest("מחיקת הרשומה נכשלה.");
+            }
         }
-
-        // כאן אפשר להוסיף את שאר המתודות (GetById, Update) באותה צורה
     }
 }

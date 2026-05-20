@@ -10,10 +10,9 @@ using System.Threading.Tasks;
 
 namespace Service.Services
 {
-    // שים לב: הורדתי את ה-internal כדי למנוע בעיות גישה ב-Controller
     public class ParentAvailabilityService : IService<ParentAvailabilityDto>
     {
-        private readonly IRepository<ParentAvailability> repository;
+        private readonly IRepository<ParentAvailability> repository; 
         private readonly IMapper mapper;
 
         public ParentAvailabilityService(IRepository<ParentAvailability> repository, IMapper map)
@@ -22,18 +21,12 @@ namespace Service.Services
             this.mapper = map;
         }
 
-        // מתודה אחת ומאוחדת לשליפה לפי בית ספר עם ניקוי אוטומטי
         public async Task<List<ParentAvailabilityDto>> GetBySchoolId(int schoolId)
         {
-            // שליפת כל הנתונים (מכיוון שה-Repository הוא גנרי)
-            var allEntities = await repository.GetAll();
-
-            // סינון ראשוני לפי בית ספר
-            var schoolEntities = allEntities.Where(t => t.SchoolId == schoolId).ToList();
+            var schoolEntities = await repository.GetAsync(t => t.SchoolId == schoolId);
 
             var today = DateTime.Today;
 
-            // 1. איתור ומחיקת אילוצים ישנים
             var expiredEntities = schoolEntities
                 .Where(e => e.MeetingDate.Date < today)
                 .ToList();
@@ -45,7 +38,6 @@ namespace Service.Services
                     await repository.DeleteItem(expired.Id);
                 }
 
-                // 2. השארת רק הפגישות הרלוונטיות להחזרה למשתמש
                 schoolEntities = schoolEntities.Where(e => e.MeetingDate.Date >= today).ToList();
             }
 

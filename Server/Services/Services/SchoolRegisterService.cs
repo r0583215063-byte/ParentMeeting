@@ -3,6 +3,9 @@ using Repository.Entities;
 using Repository.Interfaces;
 using Service.Dto;
 using Service.Interfaces;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Service.Services
 {
@@ -19,15 +22,21 @@ namespace Service.Services
 
         public async Task<School> Register(SchoolRegisterDto item)
         {
-            var entity = mapper.Map<School>(item);
+            if (string.IsNullOrWhiteSpace(item.Password) || item.Password.Length < 6)
+                throw new ArgumentException("הסיסמה חייבת להכיל לפחות 6 תווים.");
 
-            entity.Name = item.Name.Trim().ToLower();
+            var name = item.Name.Trim().ToLower();
+
+            var existingSchools = await repository.GetAsync(s => s.Name.ToLower() == name);
+            if (existingSchools.Any())
+                throw new InvalidOperationException("שם בית הספר כבר קים במערכת.");
+
+            var entity = mapper.Map<School>(item);
+            entity.Name = name;
             entity.Password = BCrypt.Net.BCrypt.HashPassword(item.Password);
             entity.Role = "School";
 
-            var savedSchool = await repository.AddItem(entity);
-
-            return savedSchool;
+            return await repository.AddItem(entity);
         }
     }
 }
