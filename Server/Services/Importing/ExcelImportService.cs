@@ -2,7 +2,6 @@
 using OfficeOpenXml;
 using Repository;
 using Repository.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Service.Importing
 {

@@ -36,10 +36,7 @@ namespace Repository.Repositories
             await ctx.Save();
         }
 
-        //public async Task<List<ParentMeeting>> GetAll()
-        //{
-        //    return await ctx.ParentMeetings.ToListAsync();
-        //}
+
         public async Task<List<ParentMeeting>> GetAll()
         {
             return await ctx.ParentMeetings

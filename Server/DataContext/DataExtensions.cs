@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Repository.Interfaces;
-//using Service.Services;
 
 namespace SchoolParentMeetingSystem.DataContext
 {
@@ -14,8 +13,6 @@ namespace SchoolParentMeetingSystem.DataContext
                 options.UseSqlServer(connectionString));
 
             services.AddScoped<IContext, SchoolParentMeetingSystemContext>();
-
-            //services.AddScoped<ExcelImportService>();
 
             return services;
         }

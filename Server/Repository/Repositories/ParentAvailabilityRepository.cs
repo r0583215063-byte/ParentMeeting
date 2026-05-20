@@ -48,7 +48,7 @@ namespace Repository.Repositories
         public async Task<List<ParentAvailability>> GetBySchoolId(int schoolId)
         {
             return await ctx.ParentAvailability
-                .Where(x => x.SchoolId == schoolId) // וודא שזה שם השדה אצלך
+                .Where(x => x.SchoolId == schoolId) 
                 .ToListAsync();
         }
 

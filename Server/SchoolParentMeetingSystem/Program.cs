@@ -18,12 +18,11 @@ builder.Services.AddCors(options =>
         });
 });
 
-// 2. חיבור למסד נתונים
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<SchoolParentMeetingSystemContext>(options =>
     options.UseSqlServer(connectionString));
 
-// 3. רישום סרוויסים ואבטחה (Identity)
+
 builder.Services.AddServices(connectionString);
 builder.Services.AddIdentityServices(builder.Configuration);
 
@@ -33,11 +32,10 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); // הוספת Swagger
+builder.Services.AddSwaggerGen(); 
 
 var app = builder.Build();
 
-// --- סדר ה-Middleware קריטי כאן ---
 
 if (app.Environment.IsDevelopment())
 {

@@ -107,7 +107,6 @@ namespace SchoolParentMeetingSystem.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("לא נבחר קובץ");
 
-            // שליפת ה-ID לפי ה-Claim שהגדרת ב-TokenService
             var schoolIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(schoolIdClaim))
@@ -145,12 +144,10 @@ namespace SchoolParentMeetingSystem.Controllers
         [HttpGet("status")]
         public async Task<IActionResult> GetStatus()
         {
-            // שליפת ה-ID של בית הספר מהטוקן
             var schoolIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(schoolIdClaim)) return Unauthorized();
             int schoolId = int.Parse(schoolIdClaim);
 
-            // 1. ספירת תלמידים
             var studentCount = await _context.Students
                 .CountAsync(s => s.SchoolId == schoolId);
 

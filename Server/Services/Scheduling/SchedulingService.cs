@@ -176,7 +176,7 @@ namespace Service.Scheduling
                 SchoolId = d.SchoolId,
                 StudentId = d.StudentId,
                 ParentId = d.ParentId,
-                TeacherId = d.TeacherId, // השמירה ל-SQL מתבצעת כאן
+                TeacherId = d.TeacherId,
                 ClassName = d.ClassName,
                 MeetingDate = d.MeetingDate,
                 StartTime = d.StartTime,
