@@ -174,19 +174,32 @@ namespace SchoolParentMeetingSystem.Controllers
             }
         }
 
+
         [Authorize]
         [HttpPost("import-excel")]
-        public async Task<IActionResult> ImportExcel(IFormFile file)
+        public async Task<IActionResult> ImportExcel()
         {
             try
             {
-                if (file == null || file.Length == 0) return BadRequest("לא נבחר קובץ תקני.");
+                if (!Request.HasFormContentType)
+                {
+                    return BadRequest("בקשה לא תקינה, צפוי פורמט Content-Type של Form.");
+                }
+
+                var form = await Request.ReadFormAsync();
+                var file = form.Files.GetFile("file");
+
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest("לא נבחר קובץ תקני או שהקובץ ריק.");
+                }
 
                 int schoolId = CurrentSchoolId;
                 using var stream = file.OpenReadStream();
+
                 await _excelImportService.ImportFromExcel(stream, schoolId);
 
-                return Ok("הקובץ יובא בהצלחה");
+                return Ok(new { message = "הקובץ יובא בהצלחה" });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -195,7 +208,7 @@ namespace SchoolParentMeetingSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "שגיאה בייבוא קובץ אקסל עבור בית ספר");
-                return BadRequest("ייבוא הקובץ נכשל.");
+                return BadRequest($"כישלון בעיבוד הקובץ: {ex.Message}");
             }
         }
 
@@ -241,17 +254,13 @@ namespace SchoolParentMeetingSystem.Controllers
             {
                 int schoolId = CurrentSchoolId;
 
-                // בדיקה שבית הספר קיים
                 var schools = await _service.GetBySchoolId(schoolId);
                 if (schools == null || schools.Count == 0) return NotFound("בית הספר לא נמצא.");
 
-                // ביצוע היקש (Cast) לשירות בית הספר כדי לגשת למתודת הסטטוס החדשה
                 if (_service is SchoolService schoolService)
                 {
-                    // שליפת נתוני אמת מהדאטה-בייס (תלמידים ושיבוצים)
                     var statusInfo = await schoolService.GetSchoolStatusAsync(schoolId);
 
-                    // החזרה בפורמט camelCase המדויק שהריאקט דורש בשביל ה-State
                     return Ok(new
                     {
                         studentCount = statusInfo.StudentCount,

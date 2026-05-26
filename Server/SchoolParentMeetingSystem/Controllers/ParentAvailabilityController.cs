@@ -30,7 +30,6 @@ namespace SchoolParentMeetingSystem.Controllers
             _logger = logger;
         }
 
-        // שימוש בפרופרטי פנימי נקי במקום מתודה שמחזירה 0
         private int CurrentSchoolId
         {
             get
@@ -55,7 +54,6 @@ namespace SchoolParentMeetingSystem.Controllers
                 int schoolId = CurrentSchoolId;
                 dto.SchoolId = schoolId;
 
-                // אופטימיזציה: שליפת ההורים של בית הספר הספציפי בלבד (כבר תיקנו את זה ב-Service)
                 var allParents = await _parentService.GetBySchoolId(schoolId);
                 var parent = allParents.FirstOrDefault(p => p.ParentIdentity == dto.ParentIdentity);
 
@@ -105,7 +103,6 @@ namespace SchoolParentMeetingSystem.Controllers
                 var item = await _service.GetById(id);
                 if (item == null) return NotFound("הרשומה לא נמצאה.");
 
-                // בדיקת הרשאה קשיחה: וודא שבית הספר הנוכחי רשאי למחוק את הישות הזו
                 if (item.SchoolId != CurrentSchoolId && !User.IsInRole("Admin"))
                 {
                     return Forbid();

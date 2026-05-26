@@ -10,6 +10,7 @@ namespace SchoolParentMeetingSystem.Repository.Repositories
 {
     public static class ExtensionRepository
     {
+        //Which class to create when requesting a specific Repository
         public static IServiceCollection AddRepository(this IServiceCollection services)
         {
             services.AddScoped<IRepository<Parent>, ParentRepository>();

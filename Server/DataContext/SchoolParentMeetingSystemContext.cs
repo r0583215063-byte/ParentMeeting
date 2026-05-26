@@ -26,6 +26,7 @@ namespace DataContext
             await SaveChangesAsync();
         }
 
+        //How to connect to the database
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -70,6 +71,7 @@ namespace DataContext
                 entity.HasMany(e => e.Students)
                       .WithOne(s => s.School)
                       .HasForeignKey(s => s.SchoolId)
+                      //All students are automatically deleted.
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(e => e.Parents)

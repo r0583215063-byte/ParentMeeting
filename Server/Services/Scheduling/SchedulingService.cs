@@ -1,15 +1,16 @@
 ﻿using DataContext;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml.Drawing.Chart;
 using Repository;
 using Repository.Entities;
 using Service.Dto;
+using Service.Interfaces;
+using System.Collections;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Service.Scheduling
 {
-    public interface ISchedulingService
-    {
-        Task<List<ParentMeetingDto>> ProcessSchedulingAsync(int schoolId);
-    }
+
 
     public class SchedulingService : ISchedulingService
     {
@@ -25,23 +26,25 @@ namespace Service.Scheduling
             var school = await _context.Schools.AsNoTracking().FirstOrDefaultAsync(s => s.Id == schoolId);
             if (school == null) return new List<ParentMeetingDto>();
 
-            // טעינת נתונים
             var students = await _context.Students.AsNoTracking().Where(s => s.SchoolId == schoolId).ToListAsync();
             var parents = await _context.Parents.AsNoTracking().Where(p => p.SchoolId == schoolId).ToListAsync();
             var parentConstraints = await _context.ParentAvailability.AsNoTracking().Where(pa => pa.SchoolId == schoolId && pa.MeetingDate.Date == school.MeetingDate.Date).ToListAsync();
             var teachers = await _context.Teachers.AsNoTracking().Where(t => t.SchoolId == schoolId).ToListAsync();
 
-            // מילונים לשליפה מהירה
+            //Classroom → Teacher Mapping
             var classTeacherIdMap = teachers.ToDictionary(t => t.ClassName, t => t.Id);
             var classTeacherNameMap = teachers.ToDictionary(t => t.ClassName, t => t.FullName);
+            //ParentId → ParentIdentity Mapping
             var parentIdentityMap = parents.ToDictionary(p => p.Id, p => p.ParentIdentity);
 
+            //Creating slots
             var timeSlots = GenerateTimeSlots(school);
 
-            // ניהול תפוסה לפי שם כיתה (מבטיח מורה אחד בחדר בכל זמן נתון)
+            //Create busy meetings
             var classNames = students.Select(s => s.ClassName).Distinct().ToList();
             var classBusySlots = classNames.ToDictionary(name => name, name => new HashSet<TimeSpan>());
 
+            //Building availability
             var parentAvailabilityDict = parentConstraints
                 .Where(pc => !string.IsNullOrEmpty(pc.ParentIdentity))
                 .GroupBy(pc => pc.ParentIdentity)
@@ -49,7 +52,7 @@ namespace Service.Scheduling
 
             var allMeetings = new List<ParentMeetingDto>();
 
-            // קיבוץ לפי הורים (שיבוץ משפחות ברצף)
+            //Grouping students by family
             var parentGroups = students
                 .Where(s => {
                     int pId = Convert.ToInt32(s.ParentId);
@@ -64,8 +67,7 @@ namespace Service.Scheduling
                 var parentIdentity = group.Key;
                 var family = group.ToList();
                 List<TimeSpan> selectedSlots = null;
-
-                // אלגוריתם שיבוץ אופטימלי (ניסיון קשוח -> ניסיון גמיש -> התעלמות מאילוצים)
+                //All meetings within 30 minutes, must have positive availability, must have unavailability
                 selectedSlots = FindOptimalSlots(parentIdentity, family, timeSlots, classBusySlots, parentAvailabilityDict, school.SlotDurationMinutes, 30, true);
                 if (selectedSlots == null)
                     selectedSlots = FindOptimalSlots(parentIdentity, family, timeSlots, classBusySlots, parentAvailabilityDict, school.SlotDurationMinutes, 30, false);
@@ -79,10 +81,8 @@ namespace Service.Scheduling
                         var student = family[i];
                         var slot = selectedSlots[i];
 
-                        // סימון הכיתה כתפוסה
                         classBusySlots[student.ClassName].Add(slot);
 
-                        // שליפת פרטי המורה
                         classTeacherIdMap.TryGetValue(student.ClassName, out int tId);
                         classTeacherNameMap.TryGetValue(student.ClassName, out string tName);
 
@@ -110,6 +110,7 @@ namespace Service.Scheduling
         {
             var bestOptions = new List<(List<TimeSpan> Slots, double Gap)>();
 
+            //Every hour is checked as a start.
             foreach (var startAnchor in allSlots)
             {
                 var trialSlots = new List<TimeSpan>();
@@ -120,7 +121,7 @@ namespace Service.Scheduling
                     var slot = allSlots
                         .Where(s => s >= startAnchor)
                         .Where(s => !classBusy[student.ClassName].Contains(s))
-                        .Where(s => !trialSlots.Contains(s)) // מונע מהורה להיות ב-2 מקומות בו-זמנית
+                        .Where(s => !trialSlots.Contains(s)) 
                         .Where(s => ignoreConstraintsEntirely || IsSlotAllowed(parentIdentity, s, availDict, duration, strictConstraints, true))
                         .OrderBy(s => s)
                         .FirstOrDefault();
@@ -139,6 +140,7 @@ namespace Service.Scheduling
             return bestOptions.OrderBy(o => o.Gap).ThenBy(o => o.Slots.Min()).Select(o => o.Slots).FirstOrDefault();
         }
 
+        //Checks if the time is suitable for the parent.
         private bool IsSlotAllowed(string parentIdentity, TimeSpan slot, Dictionary<string, List<ParentAvailability>> dict, int duration, bool usePositive, bool useNegative)
         {
             if (string.IsNullOrEmpty(parentIdentity) || !dict.ContainsKey(parentIdentity)) return true;
@@ -157,6 +159,7 @@ namespace Service.Scheduling
             return true;
         }
 
+        //Creating slots
         private List<TimeSpan> GenerateTimeSlots(School school)
         {
             var slots = new List<TimeSpan>();

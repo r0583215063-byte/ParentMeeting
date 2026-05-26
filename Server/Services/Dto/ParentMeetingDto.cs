@@ -12,14 +12,13 @@ namespace Service.Dto
         [Required]
         public int ParentId { get; set; }
         public string ParentName { get; set; }
-        // שדות חדשים שהוספנו
         public int TeacherId { get; set; }
         public string TeacherName { get; set; }
 
         [Required, StringLength(5, MinimumLength = 1)]
         public string ClassName { get; set; }
 
-        [Required] // MaxLength לא רלוונטי ל-int, השתמש ב-Required
+        [Required] 
         public int SchoolId { get; set; }
 
         [Required]

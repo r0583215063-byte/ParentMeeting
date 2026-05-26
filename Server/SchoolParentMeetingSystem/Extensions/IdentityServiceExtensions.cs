@@ -9,7 +9,7 @@ namespace SchoolParentMeetingSystem.Extensions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration config)
         {
-            // הגדרת אימות JWT
+            // JWT
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -30,7 +30,7 @@ namespace SchoolParentMeetingSystem.Extensions
                 };
             });
 
-            // הגדרת Swagger
+            //  Swagger
             services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

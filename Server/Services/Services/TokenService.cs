@@ -16,6 +16,7 @@ namespace Service.Services
 
         public TokenService(IConfiguration config)
         {
+            //appsettings.json
             _config = config;
         }
 

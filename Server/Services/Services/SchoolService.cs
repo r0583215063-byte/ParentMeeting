@@ -6,7 +6,7 @@ using Service.Dto;
 using Service.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq; // נחוץ עבור פעולות על רשימות במידת הצורך
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Service.Services
@@ -14,11 +14,10 @@ namespace Service.Services
     public class SchoolService : IService<SchoolDto>
     {
         private readonly IRepository<School> repository;
-        private readonly IRepository<Student> studentRepository;         // הזרקה חדשה
-        private readonly IRepository<ParentMeeting> meetingRepository;   // הזרקה חדשה
+        private readonly IRepository<Student> studentRepository;
+        private readonly IRepository<ParentMeeting> meetingRepository;
         private readonly IMapper mapper;
 
-        // עדכון הקונסטרקטור שיקבל את שלושת ה-Repositories
         public SchoolService(
             IRepository<School> repository,
             IRepository<Student> studentRepository,
@@ -31,14 +30,11 @@ namespace Service.Services
             this.mapper = map;
         }
 
-        // מתודה חדשה לחישוב הסטטוס האמיתי מהדאטה-בייס
         public async Task<SchoolStatusDto> GetSchoolStatusAsync(int schoolId)
         {
-            // 1. שליפת התלמידים המשויכים לבית הספר וספירתם
             var students = await studentRepository.GetAsync(s => s.SchoolId == schoolId);
             int studentCount = students != null ? students.Count : 0;
 
-            // 2. בדיקה האם קיימת פגישה/שיבוץ כלשהו עבור בית הספר הזה
             var meetings = await meetingRepository.GetAsync(m => m.SchoolId == schoolId);
             bool isScheduleGenerated = meetings != null && meetings.Count > 0;
 

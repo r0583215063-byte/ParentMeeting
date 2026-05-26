@@ -27,9 +27,6 @@ namespace SchoolParentMeetingSystem.Service.Services
             services.AddScoped<IService<TeacherDto>, TeacherService>();
             services.AddScoped<IService<ParentDto>, ParentService>();
             services.AddScoped<IService<StudentDto>, StudentService>();
-            services.AddScoped<IToken<School>, TokenService>();
-            //services.AddScoped<IToken<SchoolLoginDto>, TokenService>();
-            //services.AddScoped<SchedulingService>();
             services.AddScoped<ISchedulingService, SchedulingService>();
             return services;
         }
